@@ -1,69 +1,115 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import 
+{
+  setAudioModeAsync,
+  useAudioPlaylist,
+  useAudioPlayerStatus,
+} from 'expo-audio';
 import {
-  FlatList, 
+  FlatList,
+  Image,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions 
+  useWindowDimensions
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import songs from '../model/data';
 import colors from '../theme/colors';
 
+
+const audioSources = songs.map((song) => song.url); 
+
 export default function MusicPlayer() {
   const { width } = useWindowDimensions();
-  const [selectedIndexs, setSelectedIndex] = useState(0);
-  
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const playlistOptions = useMemo(
+    () => ({
+      sources: audioSources,
+      loop: 'none',
+      updateInterval: 250,
+    }),
+    [],
+  );
+
+  const playlist = useAudioPlaylist(playlistOptions);
+  const status = useAudioPlayerStatus(playlist);
+
   const currentSong = songs[selectedIndex];
   const artworkSize = Math.min(width-40, 380);
+
+  useEffect(() => {
+    setAudioModeAsync({
+      playInSilentMode: true,
+      shouldPlayInBackground: false,
+      interruptionMode: 'doNotMix',
+    });
+  }, []);
+
+  useEffect(() => {
+    if (Number.isIntager(status.currentIndex)) {
+      setSelectedIndex(status.currentIndex);
+    }
+  }, [status.currentIndex]);
+
+  function selectSong(index) {
+    if (index < 0 || index >= songs.length || index === selectedIndex) {
+      return;
+    }
+    const shouldResume = status.playing;
+    setSelectedIndex(index);
+    playlist.skipTo(index);
+    if (shouldResume) {
+      playlist.play();
+    }
+  }
 
   function handleMomentEnd(event) {
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / width);
-    setSelectedIndex(Index);
+    setSelectedIndex(index);
   }
 
-  function renderArtwork({item}) {
+  function renderArtwork({ item }) {
     return (
-      <view style={[styles.artworkPage, {width }]}>
-        <image
-        source={item.artwork }
-        style={[
-          styles.artworkSize,
-          { height: artworkSize, width: artworkSize }
-        ]}
+      <View style={[styles.artworkPage, { width }]}>
+        <Image
+          source={ item.artwork }
+          style={[
+              styles.artworkSize,
+              { height: artworkSize, width: artworkSize }
+            ]}
         />
-
-      </view>
+      </View>
     );
   }
-
-
+  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.eyebrow}>TOCANDO AGORA</Text>
         <Text style={styles.counter}>
-        {selectedIndex + 1} de {songs.length}
+          {selectedIndex + 1} de {songs.length}
         </Text>
-    </View>
+      </View>
 
-    <Flatlist 
-    data={songs}
-    horizontal
-    
-    renderItem={renderArtwork}
-    keyExtractor={(item) => string(item.id)}
-    showsHorizontalScrollIndictor={false}
-    onMonumentumScrollEnd={handMomentEnd}
-    />
+      <FlatList
+        data={songs}
+        horizontal
+        pagingEnabled
+        renderItem={renderArtwork}
+        keyExtractor={(item) => String(item.id)}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleMomentEnd}
+      />
 
-    <View style={styles.metadata}>
-    <Text style={styles.songTitle}>{currentSong.title}</Text>
-    <Text style={styles.songArtist}>{currentSong.artist}</Text>
-    </View>
-
+      <View style={styles.metadata}>
+        <Text style={styles.songTitle}>{currentSong.title}</Text>
+        <Text style={styles.songArtist}>{currentSong.artist}</Text>
+      </View>
 
     </SafeAreaView>
   )
@@ -81,11 +127,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   header: {
-    heigth: 70,
+    height: 70,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent:'space-between',
+    justifyContent: 'space-between',
   },
   eyebrow: {
     color: colors.primary,
@@ -104,19 +150,19 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 15
   },
-    counter: {
+  counter: {
     color: colors.textSecondary,
     fontSize: 12,
   },
   artworkPage: {
     alignItems: 'center',
-    justifyContentContent: 'center',
+    justifyContent: 'center',
   },
   artwork: {
     borderRadius: 24,
   },
   metadata: {
-    minHeight:110,
+    minHeight: 110,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
@@ -130,6 +176,6 @@ const styles = StyleSheet.create({
   songArtist: {
     marginTop: 6,
     color: colors.textSecondary,
-    fontSize: 14
+    fontSize: 14,
   },
 })
