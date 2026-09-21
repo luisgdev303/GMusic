@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import {
   initialWindowMetrics,
-  SafeAreaProvider
+  SafeAreaProvider,
 } from 'react-native-safe-area-context';
 
 import MusicPlayer from './screens/MusicPlayer';
@@ -14,4 +14,3 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
